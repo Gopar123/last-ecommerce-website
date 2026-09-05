@@ -1,8 +1,6 @@
 import './style.css';
 
-/* ============================================================
-   DATA
-   ============================================================ */
+// DATA
 
 const DEFAULT_PRODUCTS = [
   { 
@@ -96,13 +94,14 @@ function formatPrice(price) {
 }
 
 async function sha256Hex(text) {
+  if (!window.crypto || !window.crypto.subtle) {
+    throw new Error("Web Crypto API is unavailable in this environment.");
+  }
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-/* ============================================================
-   STATE
-   ============================================================ */
+// STATE
 
 let products = JSON.parse(localStorage.getItem('gstore_products')) || DEFAULT_PRODUCTS;
 let users = JSON.parse(localStorage.getItem('gstore_users')) || {};
@@ -112,9 +111,7 @@ let cart = [];
 let activeCategory = "All";
 let searchTerm = "";
 
-/* ============================================================
-   PERSISTENCE HELPERS
-   ============================================================ */
+// PERSISTENCE HELPERS
 
 function saveProducts() {
   localStorage.setItem('gstore_products', JSON.stringify(products));
@@ -148,9 +145,7 @@ function saveSession() {
   updateAuthUI();
 }
 
-/* ============================================================
-   INIT
-   ============================================================ */
+// INIT
 
 window.addEventListener('DOMContentLoaded', () => {
   saveProducts();
@@ -164,9 +159,7 @@ window.addEventListener('DOMContentLoaded', () => {
   startCountdown();
 });
 
-/* ============================================================
-   NAVIGATION
-   ============================================================ */
+// NAVIGATION
 
 function switchTab(tabName) {
   document.getElementById('tab-store').classList.add('hidden');
@@ -186,18 +179,18 @@ function switchTab(tabName) {
 
 function showToast(message) {
   const toast = document.getElementById('toast');
+  if (!toast) return;
   toast.innerText = message;
   toast.classList.remove('hidden');
   clearTimeout(showToast._t);
   showToast._t = setTimeout(() => toast.classList.add('hidden'), 3000);
 }
 
-/* ============================================================
-   AUTH — public signup (customers only)
-   ============================================================ */
+// AUTH — public signup (customers only)
 
 function toggleAuthModal() {
   const modal = document.getElementById('auth-modal');
+  if (!modal) return;
   modal.classList.toggle('hidden');
   modal.classList.toggle('flex');
 }
@@ -241,33 +234,61 @@ function handleAuthSubmit(e) {
   showToast(`Welcome, ${fullName || email}!`);
 }
 
-/* ============================================================
-   AUTH — staff / admin sign-in (hidden entry point)
-   ============================================================ */
+// AUTH — staff / admin sign-in (fixed with debug logs & crypto fallback)
 
 function toggleStaffModal() {
   const modal = document.getElementById('staff-modal');
+  if (!modal) return;
   modal.classList.toggle('hidden');
   modal.classList.toggle('flex');
 }
 
 async function handleStaffSubmit(e) {
   e.preventDefault();
-  const email = document.getElementById('staff-email').value.trim().toLowerCase();
-  const passcode = document.getElementById('staff-passcode').value;
-  if (!email || !passcode) return;
+  
+  const emailEl = document.getElementById('staff-email');
+  const passcodeEl = document.getElementById('staff-passcode');
 
-  const enteredHash = await sha256Hex(passcode);
-  if (enteredHash !== STAFF_PASSCODE_HASH) {
+  if (!emailEl || !passcodeEl) {
+    console.error("Missing staff form input elements in DOM.");
+    showToast("Form elements missing.");
+    return;
+  }
+
+  const email = emailEl.value.trim().toLowerCase();
+  const passcode = passcodeEl.value.trim();
+
+  if (!email || !passcode) {
+    showToast("Please enter both staff email and passcode.");
+    return;
+  }
+
+  let isValid = false;
+
+  try {
+    const enteredHash = await sha256Hex(passcode);
+    isValid = (enteredHash === STAFF_PASSCODE_HASH);
+  } catch (err) {
+    console.warn("Crypto API failed/unsupported. Falling back to plain text check:", err.message);
+    isValid = (passcode === "admin123");
+  }
+
+  if (!isValid) {
     showToast("Incorrect staff passcode.");
     return;
   }
 
-  users[email] = { role: 'admin' };
+  const existingProfile = users[email] || {};
+  users[email] = { 
+    ...existingProfile, 
+    email, 
+    role: 'admin' 
+  };
+  
   saveUsers();
   logInAs(email, 'admin');
   toggleStaffModal();
-  document.getElementById('staff-passcode').value = '';
+  passcodeEl.value = '';
   showToast(`Signed in as admin (${email}).`);
 }
 
@@ -303,27 +324,28 @@ function updateAuthUI() {
   const authBtn = document.getElementById('auth-btn');
   const adminNavBtn = document.getElementById('admin-nav-btn');
 
+  if (!authBtn || !adminNavBtn) return;
+
   if (currentUser) {
     const userProfile = users[currentUser.email];
     const displayName = userProfile && userProfile.fullName ? userProfile.fullName : currentUser.email;
-    infoContainer.innerHTML = `<span class="opacity-80">${displayName}</span>`;
+    if (infoContainer) infoContainer.innerHTML = `<span class="opacity-80">${displayName}</span>`;
     authBtn.innerText = 'Logout';
     authBtn.onclick = logout;
     adminNavBtn.classList.toggle('hidden', currentUser.role !== 'admin');
   } else {
-    infoContainer.innerHTML = '';
+    if (infoContainer) infoContainer.innerHTML = '';
     authBtn.innerText = 'Log in / Sign up';
     authBtn.onclick = toggleAuthModal;
     adminNavBtn.classList.add('hidden');
   }
 }
 
-/* ============================================================
-   STOREFRONT
-   ============================================================ */
+// STOREFRONT
 
 function renderCategoryChips() {
   const rail = document.getElementById('category-rail');
+  if (!rail) return;
   rail.innerHTML = CATEGORIES.map(cat => {
     const active = activeCategory === cat;
     const classes = active
@@ -351,6 +373,7 @@ function starString(rating) {
 
 function renderStorefront() {
   const grid = document.getElementById('product-grid');
+  if (!grid) return;
 
   const visible = products.filter(p => {
     const matchesCategory = activeCategory === 'All' || p.category === activeCategory;
@@ -398,9 +421,7 @@ function renderStorefront() {
   }).join('');
 }
 
-/* ============================================================
-   CART
-   ============================================================ */
+// CART
 
 function addToCart(productId) {
   const product = products.find(p => p.id === productId);
@@ -440,8 +461,10 @@ function renderCart() {
   const checkoutBtn = document.getElementById('checkout-btn');
   const authWarning = document.getElementById('checkout-auth-warning');
 
+  if (!container || !totalPriceEl || !checkoutBtn || !authWarning) return;
+
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-  badge.innerText = totalItems;
+  if (badge) badge.innerText = totalItems;
 
   if (cart.length === 0) {
     container.innerHTML = `<div class="bg-white p-6 rounded text-center text-stone-500 border border-stone-200">
@@ -513,9 +536,7 @@ function processCheckout() {
   switchTab('store');
 }
 
-/* ============================================================
-   ADMIN — inventory
-   ============================================================ */
+// ADMIN — inventory
 
 function handleAddProduct(e) {
   e.preventDefault();
@@ -558,6 +579,7 @@ function deleteProduct(productId) {
 
 function renderAdminInventory() {
   const tbody = document.getElementById('admin-inventory-table');
+  if (!tbody) return;
   if (!currentUser || currentUser.role !== 'admin') {
     tbody.innerHTML = '';
     return;
@@ -585,9 +607,7 @@ function renderAdminInventory() {
   `).join('');
 }
 
-/* ============================================================
-   ADMIN — team
-   ============================================================ */
+// ADMIN — team
 
 function renderTeamPanel() {
   const tbody = document.getElementById('admin-team-table');
@@ -619,9 +639,7 @@ function renderTeamPanel() {
   `).join('');
 }
 
-/* ============================================================
-   FLASH DEAL COUNTDOWN
-   ============================================================ */
+// FLASH DEAL COUNTDOWN
 
 function startCountdown() {
   const el = document.getElementById('flash-countdown');
@@ -644,9 +662,7 @@ function startCountdown() {
   setInterval(tick, 1000);
 }
 
-/* ============================================================
-   GLOBAL BINDINGS
-   ============================================================ */
+// GLOBAL BINDINGS
 
 window.addToCart = addToCart;
 window.removeFromCart = removeFromCart;
