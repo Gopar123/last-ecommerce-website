@@ -4,146 +4,272 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>G-Store</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link href="/src/style.css" rel="stylesheet">
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans min-h-screen flex flex-col">
+<body class="bg-[#F6F5F3] text-[#1C1B1A] font-['Inter'] min-h-screen flex flex-col">
 
-  <!-- Header / Navigation -->
-  <header class="bg-gray-950 text-white shadow-md sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-      <h1 class="text-2xl font-bold tracking-tight cursor-pointer" onclick="switchTab('store')">G-Store</h1>
-      
-      <div class="flex items-center space-x-4">
-        <!-- Auth View Status -->
-        <div id="nav-user-info" class="text-sm font-medium"></div>
+  <!-- Header -->
+  <header class="bg-white border-b border-stone-200 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4">
+      <h1 class="font-['Manrope'] font-extrabold text-2xl text-[#E2231A] tracking-tight cursor-pointer shrink-0" onclick="switchTab('store')">G-Store</h1>
 
-        <button id="admin-nav-btn" onclick="switchTab('admin')" class="hidden bg-black hover:bg-blue-950 text-xs px-3 py-1.5 rounded transition">
+      <div class="flex-1 max-w-2xl">
+        <input
+          type="search"
+          placeholder="Search products..."
+          oninput="setSearch(this.value)"
+          class="w-full border-2 border-[#E2231A] rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF7A1A]/40"
+        >
+      </div>
+
+      <div class="flex items-center gap-3 shrink-0">
+        <div id="nav-user-info" class="text-sm font-medium hidden sm:block"></div>
+
+        <button id="admin-nav-btn" onclick="switchTab('admin')" class="hidden bg-[#1C1B1A] hover:bg-stone-800 text-white text-xs px-3 py-1.5 rounded transition">
           Admin Panel
         </button>
 
-        <button onclick="switchTab('cart')" class="relative bg-black hover:bg-blue-950 px-3 py-1.5 rounded text-sm flex items-center gap-1 transition">Cart
-          <span id="cart-count-badge" class="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-0.5 ml-1">0</span>
+        <button onclick="switchTab('cart')" class="relative bg-[#1C1B1A] hover:bg-stone-800 text-white px-3 py-1.5 rounded text-sm flex items-center gap-1 transition">
+          Cart
+          <span id="cart-count-badge" class="bg-[#E2231A] text-white text-xs font-bold rounded-full px-2 py-0.5 ml-1">0</span>
         </button>
 
-        <button id="auth-btn" onclick="toggleAuthModal()" class="bg-white text-black font-semibold px-3 py-1.5 rounded text-sm hover:bg-gray-100 transition">
-          Login
+        <button id="auth-btn" onclick="toggleAuthModal()" class="bg-[#E2231A] hover:bg-[#c41d15] text-white font-semibold px-3 py-1.5 rounded text-sm transition">
+          Log in / Sign up
         </button>
       </div>
     </div>
+
+    <!-- Category rail -->
+    <div id="category-rail" class="max-w-7xl mx-auto px-4 pb-3 flex gap-2 overflow-x-auto"></div>
   </header>
 
-  <!-- Main Content Area -->
-  <main class="max-w-7xl mx-auto px-4 py-8 grow w-full">
-    
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-5 right-5 bg-gray-900 text-white px-4 py-2 rounded shadow-lg hidden transition-opacity duration-300 z-50"></div>
+  <main class="max-w-7xl mx-auto px-4 py-6 grow w-full">
 
-    <!-- TAB 1: Storefront View -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-[#1C1B1A] text-white px-4 py-2 rounded shadow-lg hidden transition-opacity duration-300 z-50"></div>
+
+    <!-- TAB 1: Storefront -->
     <section id="tab-store" class="space-y-6">
-      <h2 class="text-2xl font-bold text-gray-800 border-b pb-2">Catalog</h2>
-      <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+
+      <!-- Flash deal strip -->
+      <div class="bg-[#E2231A] text-white rounded-lg px-5 py-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-baseline gap-3">
+          <span class="font-['Manrope'] font-extrabold text-xl">Flash Deals</span>
+          <span class="text-sm text-white/80">today only — prices drop back at midnight</span>
+        </div>
+        <div class="flex items-center gap-2 font-mono text-lg font-bold bg-black/20 px-3 py-1 rounded">
+          <span id="flash-countdown">00:00:00</span>
+        </div>
+      </div>
+
+      <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         <!-- Injected via JavaScript -->
       </div>
     </section>
 
-    <!-- TAB 2: Cart & Checkout View -->
+    <!-- TAB 2: Cart & Checkout -->
     <section id="tab-cart" class="hidden space-y-6 max-w-3xl mx-auto">
-      <h2 class="text-2xl font-bold text-gray-800 border-b pb-2">Your Shopping Cart</h2>
-      
-      <div id="cart-items-container" class="space-y-4">
-        <!-- Injected via JavaScript -->
-      </div>
+      <h2 class="font-['Manrope'] font-bold text-2xl border-b border-stone-200 pb-2">Your Cart</h2>
 
-      <div class="bg-white p-6 rounded-lg shadow-sm border space-y-4">
+      <div id="cart-items-container" class="space-y-4"></div>
+
+      <div class="bg-white p-6 rounded-lg border border-stone-200 space-y-4">
         <div class="flex justify-between text-lg font-bold">
           <span>Total:</span>
           <span id="cart-total-price">₦0.00</span>
         </div>
 
-        <div id="checkout-auth-warning" class="bg-black border-l-4 border-white text-sm text-white p-3 rounded hidden">
-          You must be <button onclick="toggleAuthModal()" class="underline font-bold">logged in</button> to proceed to checkout.
+        <div id="checkout-auth-warning" class="bg-stone-100 border-l-4 border-[#E2231A] text-sm text-stone-700 p-3 rounded hidden">
+          You must create an account or <button onclick="toggleAuthModal()" class="underline font-bold text-[#E2231A]">log in</button> before you can check out.
         </div>
 
-        <button id="checkout-btn" onclick="processCheckout()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition">
+        <button id="checkout-btn" onclick="processCheckout()" class="w-full bg-[#E2231A] hover:bg-[#c41d15] text-white font-bold py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition">
           Proceed to Checkout
         </button>
       </div>
     </section>
 
-    <!-- TAB 3: Admin Dashboard View -->
+    <!-- TAB 3: Admin Dashboard -->
     <section id="tab-admin" class="hidden space-y-8">
-      <div class="flex justify-between items-center border-b pb-2">
-        <h2 class="text-2xl font-bold text-gray-800">Admin Dashboard</h2>
-        <span class="text-xs bg-black text-white font-semibold px-2.5 py-0.5 rounded">Restricted Area</span>
+      <div class="flex justify-between items-center border-b border-stone-200 pb-2">
+        <h2 class="font-['Manrope'] font-bold text-2xl">Admin Dashboard</h2>
+        <span class="text-xs bg-[#1C1B1A] text-white font-semibold px-2.5 py-0.5 rounded">Restricted area</span>
       </div>
 
-      <!-- Add Product Form -->
-      <div class="bg-white p-6 rounded-lg shadow-sm border max-w-xl">
-        <h3 class="text-lg font-semibold mb-4 text-gray-700">Add New Product</h3>
+      <!-- Add Product -->
+      <div class="bg-white p-6 rounded-lg border border-stone-200 max-w-xl">
+        <h3 class="text-lg font-semibold mb-4 text-stone-700">Add New Product</h3>
         <form id="add-product-form" onsubmit="handleAddProduct(event)" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700">Product Name</label>
-            <input type="text" id="admin-p-name" required class="mt-1 w-full p-2 border rounded-md focus:ring-black focus:border-white">
+            <label class="block text-sm font-medium text-stone-700">Product Name</label>
+            <input type="text" id="admin-p-name" required class="mt-1 w-full p-2 border border-stone-300 rounded-md focus:ring-[#E2231A] focus:border-[#E2231A]">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700">Price (₦)</label>
-            <input type="number" step="0.01" id="admin-p-price" required class="mt-1 w-full p-2 border rounded-md focus:ring-black focus:border-white">
+            <label class="block text-sm font-medium text-stone-700">Price (₦)</label>
+            <input type="number" step="0.01" id="admin-p-price" required class="mt-1 w-full p-2 border border-stone-300 rounded-md focus:ring-[#E2231A] focus:border-[#E2231A]">
           </div>
-          <button type="submit" class="w-full bg-black hover:bg-blue-950 text-white font-semibold py-2 rounded-md transition">
+          <div>
+            <label class="block text-sm font-medium text-stone-700">Image URL</label>
+            <input type="url" id="admin-p-image" placeholder="https://example.com/image.jpg" class="mt-1 w-full p-2 border border-stone-300 rounded-md focus:ring-[#E2231A] focus:border-[#E2231A]">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-stone-700">Category</label>
+            <select id="admin-p-category" class="mt-1 w-full p-2 border border-stone-300 rounded-md focus:ring-[#E2231A] focus:border-[#E2231A]">
+              <option>Electronics</option>
+              <option>Mobile & Tablets</option>
+              <option>Home & Living</option>
+              <option>Fashion</option>
+            </select>
+          </div>
+          <button type="submit" class="w-full bg-[#1C1B1A] hover:bg-stone-800 text-white font-semibold py-2 rounded-md transition">
             Add Product to Inventory
           </button>
         </form>
       </div>
 
       <!-- Inventory Table -->
-      <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
-        <h3 class="text-lg font-semibold p-4 bg-gray-50 border-b text-gray-700">Current Inventory</h3>
+      <div class="bg-white rounded-lg border border-stone-200 overflow-hidden">
+        <h3 class="text-lg font-semibold p-4 bg-stone-50 border-b border-stone-200 text-stone-700">Current Inventory</h3>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr class="bg-gray-100 text-gray-600 uppercase text-xs">
+              <tr class="bg-stone-100 text-stone-600 text-xs">
                 <th class="py-3 px-4">ID</th>
                 <th class="py-3 px-4">Product Name</th>
                 <th class="py-3 px-4">Price</th>
                 <th class="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody id="admin-inventory-table" class="divide-y divide-gray-200 text-sm">
-              <!-- Injected via JavaScript -->
-            </tbody>
+            <tbody id="admin-inventory-table" class="divide-y divide-stone-200 text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Team / Admin management -->
+      <div class="bg-white rounded-lg border border-stone-200 overflow-hidden">
+        <h3 class="text-lg font-semibold p-4 bg-stone-50 border-b border-stone-200 text-stone-700">Team</h3>
+        <p class="px-4 pt-3 text-xs text-stone-500">Only existing admins can promote another registered account here — this is the only way new admins get created after the first one.</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-stone-100 text-stone-600 text-xs">
+                <th class="py-3 px-4">Account</th>
+                <th class="py-3 px-4">Role</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-team-table" class="divide-y divide-stone-200 text-sm"></tbody>
           </table>
         </div>
       </div>
     </section>
-
   </main>
 
-  <!-- Login/Register Modal -->
-  <div id="auth-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-    <div class="bg-white text-gray-900 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
-      <button onclick="toggleAuthModal()" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600">&times;</button>
-      <h3 class="text-xl font-bold mb-4" id="modal-title">Log In</h3>
+  <!-- Public Customer Auth / Signup Modal -->
+  <div id="auth-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full shadow-xl relative">
+      <button onclick="toggleAuthModal()" class="absolute top-3 right-3 text-stone-400 hover:text-stone-600 text-xl font-bold">&times;</button>
+      <h2 class="text-xl font-bold mb-1 text-stone-800">Create Account / Sign In</h2>
+      <p class="text-sm text-stone-500 mb-4">Please provide your details before placing an order.</p>
       
-      <form onsubmit="handleAuthSubmit(event)" class="space-y-4">
+      <form onsubmit="handleAuthSubmit(event)" class="flex flex-col gap-3">
         <div>
-          <label class="block text-xs font-semibold uppercase text-gray-600">Role Selection</label>
-          <select id="auth-role" class="w-full p-2 border rounded mt-1 bg-gray-50 text-gray-900">
-            <option value="user">Regular User</option>
-            <option value="admin">Administrator</option>
-          </select>
+          <label class="block text-xs font-semibold text-stone-600 mb-1">Full Name</label>
+          <input id="auth-fullname" type="text" placeholder="John Doe" required class="w-full border border-stone-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#E2231A]" />
         </div>
         <div>
-          <label class="block text-xs font-semibold uppercase text-gray-600">Email</label>
-          <input type="email" id="auth-email" required placeholder="user@example.com" class="w-full p-2 border rounded mt-1 bg-white text-gray-900">
+          <label class="block text-xs font-semibold text-stone-600 mb-1">Location / Address</label>
+          <input id="auth-location" type="text" placeholder="123 Main St, Lagos" required class="w-full border border-stone-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#E2231A]" />
         </div>
-        <button type="submit" class="w-full bg-black hover:bg-blue-950 text-white font-bold py-2 rounded transition">
-          Authenticate
+        <div>
+          <label class="block text-xs font-semibold text-stone-600 mb-1">Phone Number</label>
+          <input id="auth-phone" type="tel" placeholder="+234 800 000 0000" required class="w-full border border-stone-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#E2231A]" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-stone-600 mb-1">Email</label>
+          <input id="auth-email" type="email" placeholder="john@example.com" required class="w-full border border-stone-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#E2231A]" />
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-stone-600 mb-1">Password</label>
+          <input id="auth-password" type="password" placeholder="••••••••" required class="w-full border border-stone-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-[#E2231A]" />
+        </div>
+        
+        <div class="flex justify-end gap-2 mt-2">
+          <button type="button" onclick="toggleAuthModal()" class="px-4 py-2 border rounded text-stone-600 text-sm">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-[#E2231A] text-white rounded text-sm font-semibold hover:bg-[#c41d15] transition">Submit & Register</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Hidden Staff / Admin Sign-in Modal -->
+  <div id="staff-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+    <div class="bg-white text-stone-900 rounded-lg shadow-xl p-6 w-full max-w-sm relative">
+      <button onclick="toggleStaffModal()" class="absolute top-3 right-3 text-stone-400 hover:text-stone-600 text-xl font-bold">&times;</button>
+      <h3 class="text-xl font-bold mb-1">Staff sign-in</h3>
+      <p class="text-sm text-stone-500 mb-4">Requires a passcode issued by G-Store. This is not the customer login.</p>
+
+      <form onsubmit="handleStaffSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold uppercase text-stone-600">Email</label>
+          <input type="email" id="staff-email" required placeholder="staff@example.com" class="w-full p-2 border border-stone-300 rounded mt-1 bg-white text-stone-900">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold uppercase text-stone-600">Passcode</label>
+          <input type="password" id="staff-passcode" required class="w-full p-2 border border-stone-300 rounded mt-1 bg-white text-stone-900">
+        </div>
+        <button type="submit" class="w-full bg-[#1C1B1A] hover:bg-stone-800 text-white font-bold py-2 rounded transition">
+          Sign in
         </button>
       </form>
     </div>
   </div>
 
-  <!-- Vite module entry point -->
+  <!-- Footer -->
+  <footer class="bg-[#1C1B1A] text-stone-300 mt-10">
+    <div class="max-w-7xl mx-auto px-4 py-10 grid grid-cols-2 md:grid-cols-5 gap-8">
+      <div class="col-span-2">
+        <h4 class="font-['Manrope'] font-extrabold text-xl text-white mb-2">G-Store</h4>
+        <p class="text-sm text-stone-400 max-w-xs">Everyday essentials and flash deals, shipped across Nigeria. Built for shoppers who compare before they click "Add to cart."</p>
+      </div>
+      <div>
+        <h5 class="text-white font-semibold text-sm mb-3">Shop</h5>
+        <ul class="space-y-2 text-sm text-stone-400">
+          <li><button class="hover:text-white" onclick="setCategory('Electronics')">Electronics</button></li>
+          <li><button class="hover:text-white" onclick="setCategory('Mobile & Tablets')">Mobile & Tablets</button></li>
+          <li><button class="hover:text-white" onclick="setCategory('Home & Living')">Home & Living</button></li>
+          <li><button class="hover:text-white" onclick="setCategory('Fashion')">Fashion</button></li>
+        </ul>
+      </div>
+      <div>
+        <h5 class="text-white font-semibold text-sm mb-3">Customer Care</h5>
+        <ul class="space-y-2 text-sm text-stone-400">
+          <li><a href="#" class="hover:text-white">Track my order</a></li>
+          <li><a href="#" class="hover:text-white">Returns & refunds</a></li>
+          <li><a href="#" class="hover:text-white">Shipping info</a></li>
+          <li><a href="#" class="hover:text-white">Contact support</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5 class="text-white font-semibold text-sm mb-3">Company</h5>
+        <ul class="space-y-2 text-sm text-stone-400">
+          <li><a href="#" class="hover:text-white">About G-Store</a></li>
+          <li><a href="#" class="hover:text-white">Terms of service</a></li>
+          <li><a href="#" class="hover:text-white">Privacy policy</a></li>
+          <li><button class="hover:text-white text-left" onclick="toggleStaffModal()">Staff sign-in</button></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-white/10">
+      <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-2 text-xs text-stone-500">
+        <span>&copy; 2026 G-Store. All rights reserved.</span>
+        <span>Secure checkout · Cash on delivery available · Ships nationwide</span>
+      </div>
+    </div>
+  </footer>
+
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>
