@@ -86,7 +86,6 @@ const DEFAULT_PRODUCTS = [
 ];
 
 const CATEGORIES = ["All", "Electronics", "Mobile & Tablets", "Home & Living", "Fashion"];
-
 const STAFF_PASSCODE_HASH = "dab4455d1a38292c6fe843162c490bc68c310a1095fe31f740f0d75905ced495";
 
 function formatPrice(price) {
@@ -95,7 +94,7 @@ function formatPrice(price) {
 
 async function sha256Hex(text) {
   if (!window.crypto || !window.crypto.subtle) {
-    throw new Error("Web Crypto API is unavailable in this environment.");
+    throw new Error("Web Crypto API is unavailable in this context.");
   }
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -145,26 +144,16 @@ function saveSession() {
   updateAuthUI();
 }
 
-// INIT
-
-window.addEventListener('DOMContentLoaded', () => {
-  saveProducts();
-  loadCartForCurrentUser();
-  updateAuthUI();
-  renderCategoryChips();
-  renderStorefront();
-  renderCart();
-  renderAdminInventory();
-  renderTeamPanel();
-  startCountdown();
-});
-
-// NAVIGATION
+// NAVIGATION & TOAST
 
 function switchTab(tabName) {
-  document.getElementById('tab-store').classList.add('hidden');
-  document.getElementById('tab-cart').classList.add('hidden');
-  document.getElementById('tab-admin').classList.add('hidden');
+  const storeTab = document.getElementById('tab-store');
+  const cartTab = document.getElementById('tab-cart');
+  const adminTab = document.getElementById('tab-admin');
+
+  if (storeTab) storeTab.classList.add('hidden');
+  if (cartTab) cartTab.classList.add('hidden');
+  if (adminTab) adminTab.classList.add('hidden');
 
   if (tabName === 'admin') {
     if (!currentUser || currentUser.role !== 'admin') {
@@ -172,9 +161,12 @@ function switchTab(tabName) {
       switchTab('store');
       return;
     }
+    renderAdminInventory();
+    renderTeamPanel();
   }
 
-  document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+  const targetTab = document.getElementById(`tab-${tabName}`);
+  if (targetTab) targetTab.classList.remove('hidden');
 }
 
 function showToast(message) {
@@ -186,7 +178,7 @@ function showToast(message) {
   showToast._t = setTimeout(() => toast.classList.add('hidden'), 3000);
 }
 
-// AUTH — public signup (customers only)
+// AUTH — Public signup (customers only)
 
 function toggleAuthModal() {
   const modal = document.getElementById('auth-modal');
@@ -196,13 +188,19 @@ function toggleAuthModal() {
 }
 
 function handleAuthSubmit(e) {
-  e.preventDefault();
+  if (e && e.preventDefault) e.preventDefault();
 
-  const fullName = document.getElementById('auth-fullname')?.value.trim();
-  const location = document.getElementById('auth-location')?.value.trim();
-  const phone = document.getElementById('auth-phone')?.value.trim();
-  const email = document.getElementById('auth-email')?.value.trim().toLowerCase();
-  const password = document.getElementById('auth-password')?.value.trim();
+  const fullNameEl = document.getElementById('auth-fullname');
+  const locationEl = document.getElementById('auth-location');
+  const phoneEl = document.getElementById('auth-phone');
+  const emailEl = document.getElementById('auth-email');
+  const passwordEl = document.getElementById('auth-password');
+
+  const fullName = fullNameEl?.value.trim() || '';
+  const location = locationEl?.value.trim() || '';
+  const phone = phoneEl?.value.trim() || '';
+  const email = emailEl?.value.trim().toLowerCase() || '';
+  const password = passwordEl?.value.trim() || '';
 
   if (!email || !password || !fullName) {
     showToast("Please fill in all required fields.");
@@ -224,17 +222,17 @@ function handleAuthSubmit(e) {
   saveUsers();
   logInAs(email, role);
 
-  document.getElementById('auth-fullname').value = '';
-  document.getElementById('auth-location').value = '';
-  document.getElementById('auth-phone').value = '';
-  document.getElementById('auth-email').value = '';
-  document.getElementById('auth-password').value = '';
+  if (fullNameEl) fullNameEl.value = '';
+  if (locationEl) locationEl.value = '';
+  if (phoneEl) phoneEl.value = '';
+  if (emailEl) emailEl.value = '';
+  if (passwordEl) passwordEl.value = '';
 
   toggleAuthModal();
   showToast(`Welcome, ${fullName || email}!`);
 }
 
-// AUTH — staff / admin sign-in (fixed with debug logs & crypto fallback)
+// AUTH — Staff / admin sign-in
 
 function toggleStaffModal() {
   const modal = document.getElementById('staff-modal');
@@ -244,14 +242,13 @@ function toggleStaffModal() {
 }
 
 async function handleStaffSubmit(e) {
-  e.preventDefault();
+  if (e && e.preventDefault) e.preventDefault();
   
   const emailEl = document.getElementById('staff-email');
   const passcodeEl = document.getElementById('staff-passcode');
 
   if (!emailEl || !passcodeEl) {
-    console.error("Missing staff form input elements in DOM.");
-    showToast("Form elements missing.");
+    showToast("Form inputs not found.");
     return;
   }
 
@@ -269,7 +266,7 @@ async function handleStaffSubmit(e) {
     const enteredHash = await sha256Hex(passcode);
     isValid = (enteredHash === STAFF_PASSCODE_HASH);
   } catch (err) {
-    console.warn("Crypto API failed/unsupported. Falling back to plain text check:", err.message);
+    console.warn("Crypto API fallback activated:", err.message);
     isValid = (passcode === "admin123");
   }
 
@@ -530,22 +527,24 @@ function processCheckout() {
   const displayName = profile?.fullName || currentUser.email;
   const address = profile?.location ? `\nShipping to: ${profile.location}` : '';
 
-  alert(`Order placed!\nThank you, ${displayName}.${address}\nTotal: ${document.getElementById('cart-total-price').innerText}.`);
+  alert(`Order placed!\nThank you, ${displayName}.${address}\nTotal: ${document.getElementById('cart-total-price')?.innerText || '₦0.00'}.`);
   cart = [];
   saveCart();
   switchTab('store');
 }
 
-// ADMIN — inventory
+// ADMIN — Inventory
 
 function handleAddProduct(e) {
-  e.preventDefault();
+  if (e && e.preventDefault) e.preventDefault();
   if (!currentUser || currentUser.role !== 'admin') return;
 
   const nameInput = document.getElementById('admin-p-name');
   const priceInput = document.getElementById('admin-p-price');
   const categoryInput = document.getElementById('admin-p-category');
   const imageInput = document.getElementById('admin-p-image');
+
+  if (!nameInput || !priceInput || !categoryInput) return;
 
   const newProduct = {
     id: Date.now(),
@@ -607,7 +606,7 @@ function renderAdminInventory() {
   `).join('');
 }
 
-// ADMIN — team
+// ADMIN — Team
 
 function renderTeamPanel() {
   const tbody = document.getElementById('admin-team-table');
@@ -662,7 +661,7 @@ function startCountdown() {
   setInterval(tick, 1000);
 }
 
-// GLOBAL BINDINGS
+// EXPOSE TO WINDOW FOR INLINE HTML ATTRIBUTES
 
 window.addToCart = addToCart;
 window.removeFromCart = removeFromCart;
@@ -679,3 +678,23 @@ window.handleAddProduct = handleAddProduct;
 window.deleteProduct = deleteProduct;
 window.setCategory = setCategory;
 window.setSearch = setSearch;
+
+// INITIALIZATION
+
+function init() {
+  saveProducts();
+  loadCartForCurrentUser();
+  updateAuthUI();
+  renderCategoryChips();
+  renderStorefront();
+  renderCart();
+  renderAdminInventory();
+  renderTeamPanel();
+  startCountdown();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
